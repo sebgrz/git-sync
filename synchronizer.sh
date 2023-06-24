@@ -47,6 +47,48 @@ clone_repo () {
 	esac
 }
 
+create_github_project () {
+	local PROJECT=$1
+	local PROJECT_NAME=$(echo $PROJECT | cut -d '/' -f2)
+	
+	local BODY="
+		{
+			\"name\": \"$PROJECT_NAME\",
+			\"private\": true,
+			\"is_template\": false
+		}";
+
+	curl -L \
+		-X POST \
+		-H "Accept: application/vnd.github+json" \
+		-H "Authorization: Bearer ${GITHUB_CONFIG[token]}"\
+		-H "X-GitHub-Api-Version: 2022-11-28" \
+		https://api.github.com/user/repos \
+		-d "$BODY" \
+		--silent \
+		--output /dev/null
+}
+
+push_command () {
+	local GIT_URL=$1
+	local GIT_DIR_TO_SYNC=$2
+	echo $(cd $GIT_DIR_TO_SYNC && git push --mirror $GIT_URL 2>&1)
+}
+
+push_github () {
+	local USERNAME=${GITHUB_CONFIG[username]}
+	local TOKEN=${GITHUB_CONFIG[token]}
+	local PROJECT=$1
+	local GIT_DIR_TO_SYNC=$2
+	local GIT_URL="https://$USERNAME:$TOKEN@github.com/$PROJECT.git"
+
+	local PUSH_RESULT=$(push_command $GIT_URL $GIT_DIR_TO_SYNC)
+	if [[ $PUSH_RESULT == *"not found"* ]]; then
+		create_github_project $PROJECT
+		push_command $GIT_URL $GIT_DIR_TO_SYNC > /dev/null
+	fi
+}
+
 push_gitlab () {
 	local USERNAME=${GITLAB_CONFIG[username]}
 	local TOKEN=${GITLAB_CONFIG[token]}
@@ -61,7 +103,7 @@ push_gitlab () {
 		PROTOCOL="https://"
 	fi
 	local GIT_URL="$PROTOCOL$USERNAME:$TOKEN@$HOST/$PROJECT.git"
-	(cd $GIT_DIR_TO_SYNC && git push --mirror $GIT_URL) # Run in subshell
+	push_command $GIT_URL $GIT_DIR_TO_SYNC > /dev/null
 }
 
 push_repo () {
@@ -71,7 +113,7 @@ push_repo () {
 
 	case $PROVIDER in
 		"gh"*)
-			echo "UNIMPLEMENTED PUSH"
+			push_github $REPO_PROJECT $REPO_DIR
 			;;
 		"gl"*)
 			push_gitlab $REPO_PROJECT $REPO_DIR
