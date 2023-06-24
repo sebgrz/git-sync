@@ -1,0 +1,12 @@
+{
+	"gh": {
+		"username": "example",
+		"token": "PAT-token"
+	},
+	"gl": {
+		"https": true,
+		"host": "gitlab.com",
+		"username": "example",
+		"token": "PAT-token"
+	}
+}
