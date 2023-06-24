@@ -33,6 +33,26 @@ clone_github () {
 	echo $GITHUB_TEMP_DIR #RETURN
 }
 
+clone_gitlab () {
+	local USERNAME=${GITLAB_CONFIG[username]}
+	local TOKEN=${GITLAB_CONFIG[token]}
+	local HTTPS=${GITLAB_CONFIG[https]}
+	local HOST=${GITLAB_CONFIG[host]}
+	local PROJECT=$1
+	local GIT_DIR_TO_SYNC=$2
+	local PROTOCOL="http://"
+
+	if [[ $HTTPS = "true" ]]
+	then
+		PROTOCOL="https://"
+	fi
+
+	local GIT_URL="$PROTOCOL$USERNAME:$TOKEN@$HOST/$PROJECT.git"
+	git clone --bare $GIT_URL $GITLAB_TEMP_DIR
+
+	echo $GITLAB_TEMP_DIR #RETURN
+}
+
 clone_repo () {
 	local PROVIDER=$(echo $1 | cut -d ':' -f1)
 	local REPO_PROJECT=$(echo $1 | cut -d ':' -f2)
@@ -42,7 +62,7 @@ clone_repo () {
 			echo $(clone_github $REPO_PROJECT) #RETURN
 			;;
 		"gl"*)
-			echo "UNIMPLEMENTED CLONE"
+			echo $(clone_gitlab $REPO_PROJECT) #RETURN
 			;;
 	esac
 }
