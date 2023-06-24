@@ -2,9 +2,9 @@
 #
 # GLOBALS
 # Read configuration
-GITHUB_TEMP_DIR="gh_temp"
-GITLAB_TEMP_DIR="gl_temp"
 REPO_TEMP_DIR="repo"
+GITHUB_TEMP_DIR="$REPO_TEMP_DIR/gh_temp"
+GITLAB_TEMP_DIR="$REPO_TEMP_DIR/gl_temp"
 
 CONFIG_DATA=$(cat config.json)
 GH_CONFIG_DATA=$(echo $CONFIG_DATA | jq .gh)
@@ -28,35 +28,72 @@ clone_github () {
 	local TOKEN=${GITHUB_CONFIG[token]}
 	local PROJECT=$1
 	local GIT_URL="https://$USERNAME:$TOKEN@github.com/$PROJECT.git"
-	git clone --bare $GIT_URL $REPO_TEMP_DIR/$GITHUB_TEMP_DIR
+	git clone --bare $GIT_URL $GITHUB_TEMP_DIR 
+
+	echo $GITHUB_TEMP_DIR #RETURN
 }
 
 clone_repo () {
 	local PROVIDER=$(echo $1 | cut -d ':' -f1)
 	local REPO_PROJECT=$(echo $1 | cut -d ':' -f2)
 
-	echo "p: $PROVIDER rp: $REPO_PROJECT"
+	case $PROVIDER in
+		"gh"*)
+			echo $(clone_github $REPO_PROJECT) #RETURN
+			;;
+		"gl"*)
+			echo "UNIMPLEMENTED CLONE"
+			;;
+	esac
+}
+
+push_gitlab () {
+	local USERNAME=${GITLAB_CONFIG[username]}
+	local TOKEN=${GITLAB_CONFIG[token]}
+	local HTTPS=${GITLAB_CONFIG[https]}
+	local HOST=${GITLAB_CONFIG[host]}
+	local PROJECT=$1
+	local GIT_DIR_TO_SYNC=$2
+	local PROTOCOL="http://"
+
+	if [[ $HTTPS = "true" ]]
+	then
+		PROTOCOL="https://"
+	fi
+	local GIT_URL="$PROTOCOL$USERNAME:$TOKEN@$HOST/$PROJECT.git"
+	(cd $GIT_DIR_TO_SYNC && git push --mirror $GIT_URL) # Run in subshell
+}
+
+push_repo () {
+	local REPO_DIR=$2
+	local PROVIDER=$(echo $1 | cut -d ':' -f1)
+	local REPO_PROJECT=$(echo $1 | cut -d ':' -f2)
 
 	case $PROVIDER in
 		"gh"*)
-			clone_github $REPO_PROJECT
+			echo "UNIMPLEMENTED PUSH"
 			;;
 		"gl"*)
-			echo "UNIMPLEMENTED"
+			push_gitlab $REPO_PROJECT $REPO_DIR
 			;;
 	esac
 }
 
 # MAIN
 # Read file with repos - exlclude empty line and comments
-mkdir -p $REPO_TEMP_DIR/$GITHUB_TEMP_DIR
-mkdir -p $REPO_TEMP_DIR/$GITLAB_TEMP_DIR
+
+mkdir -p $GITHUB_TEMP_DIR
+mkdir -p $GITLAB_TEMP_DIR
 
 REPOS=$(cat repos | grep -v '^$\|^#')
 
 for REPO in $REPOS; do
 	ORIGIN_REPO_PROJECT=$(echo $REPO | cut -d '|' -f1)
 	BACKUP_REPO_PROJECT=$(echo $REPO | cut -d '|' -f2)
-	echo -e "o:\n $(clone_repo $ORIGIN_REPO_PROJECT)\nb:\n $(clone_repo $BACKUP_REPO_PROJECT) \n\n"
+	REPO_DIR=$(clone_repo $ORIGIN_REPO_PROJECT)
+	push_repo $BACKUP_REPO_PROJECT $REPO_DIR
+
+	# Remove temp dir
+	rm -rf $REPO_TEMP_DIR
 done
 
