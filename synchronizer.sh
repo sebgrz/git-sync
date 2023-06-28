@@ -40,7 +40,7 @@ clone_github () {
 	local TOKEN=${GITHUB_CONFIG[token]}
 	local PROJECT=$1
 	local GIT_URL="https://$USERNAME:$TOKEN@github.com/$PROJECT.git"
-	git clone --bare $GIT_URL $GITHUB_TEMP_DIR 
+	git clone --bare $GIT_URL $GITHUB_TEMP_DIR 2> /dev/null
 
 	echo $GITHUB_TEMP_DIR #RETURN
 }
@@ -60,7 +60,7 @@ clone_gitlab () {
 	fi
 
 	local GIT_URL="$PROTOCOL$USERNAME:$TOKEN@$HOST/$PROJECT.git"
-	git clone --bare $GIT_URL $GITLAB_TEMP_DIR
+	git clone --bare $GIT_URL $GITLAB_TEMP_DIR 2> /dev/null
 
 	echo $GITLAB_TEMP_DIR #RETURN
 }
