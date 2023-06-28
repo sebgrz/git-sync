@@ -2,11 +2,23 @@
 #
 # GLOBALS
 # Read configuration
+
+CONFIG_PATH=$1
+REPOS_PATH=$2
+
+if [[ -z $CONFIG_PATH ]]; then
+	CONFIG_PATH="config.json"
+fi
+
+if [[ -z $REPOS_PATH ]]; then
+	REPOS_PATH="repos"
+fi
+
 REPO_TEMP_DIR="repo"
 GITHUB_TEMP_DIR="$REPO_TEMP_DIR/gh_temp"
 GITLAB_TEMP_DIR="$REPO_TEMP_DIR/gl_temp"
 
-CONFIG_DATA=$(cat config.json)
+CONFIG_DATA=$(cat $CONFIG_PATH)
 GH_CONFIG_DATA=$(echo $CONFIG_DATA | jq .gh)
 declare -A GITHUB_CONFIG=(
 	[username]=$(echo $GH_CONFIG_DATA | jq -r .username)
@@ -147,7 +159,7 @@ push_repo () {
 mkdir -p $GITHUB_TEMP_DIR
 mkdir -p $GITLAB_TEMP_DIR
 
-REPOS=$(cat repos | grep -v '^$\|^#')
+REPOS=$(cat $REPOS_PATH | grep -v '^$\|^#')
 
 for REPO in $REPOS; do
 	ORIGIN_REPO_PROJECT=$(echo $REPO | cut -d '|' -f1)
