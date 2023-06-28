@@ -14,6 +14,16 @@ if [[ -z $REPOS_PATH ]]; then
 	REPOS_PATH="repos"
 fi
 
+log () {
+	local TIME=$(date --rfc-3339=seconds)
+	local MSG=$1
+
+	echo "$TIME: $MSG" >&2
+}
+
+log "start processing with config from: $CONFIG_PATH and repos: $REPOS_PATH"
+
+PROCESSING_ID=0
 REPO_TEMP_DIR="repo"
 GITHUB_TEMP_DIR="$REPO_TEMP_DIR/gh_temp"
 GITLAB_TEMP_DIR="$REPO_TEMP_DIR/gl_temp"
@@ -68,15 +78,20 @@ clone_gitlab () {
 clone_repo () {
 	local PROVIDER=$(echo $1 | cut -d ':' -f1)
 	local REPO_PROJECT=$(echo $1 | cut -d ':' -f2)
+	local RESULT=""
 
+	log "$PROCESSING_ID start clone $PROVIDER: $REPO_PROJECT"
 	case $PROVIDER in
 		"gh"*)
-			echo $(clone_github $REPO_PROJECT) #RETURN
+			RESULT=$(clone_github $REPO_PROJECT)
 			;;
 		"gl"*)
-			echo $(clone_gitlab $REPO_PROJECT) #RETURN
+			RESULT=$(clone_gitlab $REPO_PROJECT)
 			;;
 	esac
+	log "$PROCESSING_ID end clone $PROVIDER: $REPO_PROJECT"
+
+	echo $RESULT #RETURN
 }
 
 create_github_project () {
@@ -143,6 +158,7 @@ push_repo () {
 	local PROVIDER=$(echo $1 | cut -d ':' -f1)
 	local REPO_PROJECT=$(echo $1 | cut -d ':' -f2)
 
+	log "$PROCESSING_ID start push $PROVIDER: $REPO_PROJECT"
 	case $PROVIDER in
 		"gh"*)
 			push_github $REPO_PROJECT $REPO_DIR
@@ -151,6 +167,7 @@ push_repo () {
 			push_gitlab $REPO_PROJECT $REPO_DIR
 			;;
 	esac
+	log "$PROCESSING_ID end push $PROVIDER: $REPO_PROJECT"
 }
 
 # MAIN
@@ -162,12 +179,18 @@ mkdir -p $GITLAB_TEMP_DIR
 REPOS=$(cat $REPOS_PATH | grep -v '^$\|^#')
 
 for REPO in $REPOS; do
+	PROCESSING_ID=$(echo $(($(date +%s%N)/1000000)))
 	ORIGIN_REPO_PROJECT=$(echo $REPO | cut -d '|' -f1)
 	BACKUP_REPO_PROJECT=$(echo $REPO | cut -d '|' -f2)
+
+	log "$PROCESSING_ID start sync repo: $ORIGIN_REPO_PROJECT to: $BACKUP_REPO_PROJECT"
+
 	REPO_DIR=$(clone_repo $ORIGIN_REPO_PROJECT)
 	push_repo $BACKUP_REPO_PROJECT $REPO_DIR
 
 	# Remove temp dir
 	rm -rf $REPO_TEMP_DIR
+	log "$PROCESSING_ID end sync"
 done
 
+log "end processing"
