@@ -1,0 +1,10 @@
+[Unit]
+Description=Git synchronizer
+Wants=git-sync.timer
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/git-sync.sh /etc/git-sync.d/config.json /etc/git-sync.d/repos
+
+[Install]
+WantedBy=multi-user.target

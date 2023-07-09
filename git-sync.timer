@@ -1,0 +1,11 @@
+
+[Unit]
+Description=Activate git-sync.service every 30min
+Requires=git-sync.service
+
+[Timer]
+Unit=git-sync.service
+OnUnitInactiveSec=30m
+
+[Install]
+WantedBy=timers.target
