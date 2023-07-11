@@ -24,7 +24,7 @@ log () {
 log "start processing with config from: $CONFIG_PATH and repos: $REPOS_PATH"
 
 PROCESSING_ID=0
-REPO_TEMP_DIR="repo"
+REPO_TEMP_DIR="/tmp/git-sync-repo"
 GITHUB_TEMP_DIR="$REPO_TEMP_DIR/gh_temp"
 GITLAB_TEMP_DIR="$REPO_TEMP_DIR/gl_temp"
 
