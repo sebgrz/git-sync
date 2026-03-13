@@ -188,9 +188,10 @@ for REPO in $REPOS; do
 	REPO_DIR=$(clone_repo $ORIGIN_REPO_PROJECT)
 	push_repo $BACKUP_REPO_PROJECT $REPO_DIR
 
-	# Remove temp dir
-	rm -rf $REPO_TEMP_DIR
 	log "$PROCESSING_ID end sync"
 done
+
+# Remove temp dir
+rm -rf $REPO_TEMP_DIR
 
 log "end processing"
