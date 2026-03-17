@@ -45,6 +45,10 @@ declare -A GITLAB_CONFIG=(
 
 # FUNCTIONS
 
+urlencode() {
+  jq -sRr @uri <<< "$1"
+}
+
 clone_github () {
 	local USERNAME=${GITHUB_CONFIG[username]}
 	local TOKEN=${GITHUB_CONFIG[token]}
@@ -116,6 +120,15 @@ create_github_project () {
 		--output /dev/null
 }
 
+gitlab_enable_force_push () {
+	local ENCODED_PROJECT_NAME=$(urlencode $1)
+	local TOKEN=$2
+	local GITLAB_URL=$3
+	curl -X POST\
+		--url "$GITLAB_URL/api/v4/projects/$ENCODED_PROJECT_NAME/protected_branches?name=*&allow_force_push=true"\
+		-L -H "PRIVATE-TOKEN: $TOKEN" > /dev/null
+}
+
 push_command () {
 	local GIT_URL=$1
 	local GIT_DIR_TO_SYNC=$2
@@ -149,6 +162,9 @@ push_gitlab () {
 	then
 		PROTOCOL="https://"
 	fi
+
+	gitlab_enable_force_push $PROJECT $TOKEN $PROTOCOL$HOST
+
 	local GIT_URL="$PROTOCOL$USERNAME:$TOKEN@$HOST/$PROJECT.git"
 	push_command $GIT_URL $GIT_DIR_TO_SYNC > /dev/null
 }
